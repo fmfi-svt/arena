@@ -1,0 +1,29 @@
+# tento subor sa includuje z default-ssl
+
+# Kam zapisovat debugovacie hlasky k rewritom
+# vacsinu casu to chceme mat vypnute, nech to nespomaluje server
+#RewriteLog /var/log/apache2/rewrite.log
+#RewriteLogLevel 3
+
+RewriteEngine On
+
+<DirectoryMatch "^/var/www/anketaarena/\w+/web">
+	Order allow,deny
+	Allow from all
+</DirectoryMatch>
+
+RewriteRule ^/anketaarena$ /anketaarena/ [L,R=301]
+
+RewriteCond %{HTTP_COOKIE} !(^|;\ *)anketaarenaheslo=THESECRET($|[;\ ])
+RewriteRule ^/anketaarena/.* /var/www/anketaarena/index.php [E=BADCOOKIE:1]
+
+RewriteRule ^/anketaarena/$ /var/www/anketaarena/index.php
+
+SetEnv ALLOW_APP_LOGINDEV 1
+
+RewriteCond /var/www/anketaarena/$1/web/$2 !-f
+RewriteCond $2 !^(app|app_dev|app_logindev)\.php
+RewriteRule ^/anketaarena/(\w+)/(.*) /anketaarena/$1/app_logindev.php [QSA,PT]
+
+AliasMatch ^/anketaarena/(\w+)(.*) /var/www/anketaarena/$1/web$2
+

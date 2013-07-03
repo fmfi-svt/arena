@@ -1,0 +1,152 @@
+#!/bin/bash
+
+set -e
+installdir="$(dirname "$(readlink -f "$0")")"
+
+default () { [ "${!1}" == "" ] && export "$1=$2"; true; }
+
+default clone_url "https://code.google.com/p/fmfi-anketa/"
+default www_user "www-data"
+default db_user "anketaarena"
+default sql_file "anketa.fmph.uniba.sk:/home/majak/backup.latest.sql.gz"
+default arena_docroot "/var/www/anketaarena/"
+
+
+hrule () {
+  yes = | tr -dc = | head -c${COLUMNS:-80}
+}
+
+confset () {
+  # until the first occurence of "A:" (inclusive),
+  # replace every "A: blah" with "A: B"
+  # (meaning, only the first occurence of A: is replaced)
+  sed -r "1,/^ *$1:/ s!(^ *$1: *).*!\\1$2!"
+}
+
+trypv () {
+  if pv --version &>/dev/null; then
+    pv "$1"
+  else
+    cat "$1"
+  fi
+}
+
+
+create () {
+  # TODO checkni ci je mysql odsprostene
+
+  if [[ "$1" == *[^A-Za-z]* ]]; then
+    echo >&2 "error: invalid character in arena name"
+    exit 1
+  fi
+  if ! [ "$1" ]; then
+    echo >&2 "error: no arena name specified"
+    exit 1
+  fi
+  if [ -e "$arena_docroot/$1" ]; then
+    echo >&2 "error: arena already exists"
+    exit 1
+  fi
+
+  default db_name aa_$1
+
+  dir=`mktemp -d`
+  cd "$dir"
+  echo "$dir"
+
+  # 0. get passwords
+
+  [ -z "$db_password" ] && { read -rsp "MySQL password for $db_user: " db_password; echo; }
+  [ -z "$db_rootpw" ] && { read -rsp "MySQL password for root: " db_rootpw; echo; }
+  [ -z "$email_password" ] && { read -rsp "Swiftmailer password: [default=~] " email_password; echo; }
+  [ "$email_password" == "" ] && email_password="~"
+
+  user_email=$(git config --get user.email; true)
+  [ -z "$user_email" ] && read -rp "Your e-mail: " user_email
+
+  # download db dump first (so that the rest does not require interaction)
+  scp "$sql_file" "$dir"
+
+  # check sudo first (hopefully it will remain cached until it's needed)
+  sudo true
+
+  # 1. clone
+  git clone "$clone_url" "$1"
+  cd "$1"
+
+  # 2. initialize
+  ./scripts/init_all.sh "$www_user"
+  curl -s https://getcomposer.org/installer | php
+  ./composer.phar install
+
+  # 3. configure
+  cp app/config/config_local.yml $dir/
+  cat $dir/config_local.yml |
+    sed -r '/^\s*database:/,/^\s*$/ d' |         # remove the first database:
+    sed -r '/^#\s*database:/,/^\s*$/ s/^#//' |   # uncomment the second database:
+    confset dbname $db_name |
+    confset user $db_user |
+    confset password $db_password |
+    confset allow_db_reset false |
+    confset mail_dest_new_teaching_association "$user_email" |
+    sed -r '/swiftmailer/,$ { s/(password: *)~/\1'"$email_password"'/ }' |
+    sed -r '/orgUnits/ s/ldap_user_source/demo_user_source/' |
+    cat > app/config/config_local.yml
+
+  # 4. make db
+  sql_basename=${sql_file##*/}
+  gunzip "$dir/$sql_basename"
+  mysql -u root -p"$db_rootpw" <<<"CREATE DATABASE IF NOT EXISTS $db_name; GRANT ALL ON $db_name.* TO $db_user;"
+  echo "importing $sql_basename..."
+  trypv "$dir/${sql_basename%.gz}" | mysql -u "$db_user" -p"$db_password" "$db_name"
+
+  # 5. install
+  cd "$dir"
+  sudo mv "$1" "$arena_docroot"
+
+  # 6. done
+  echo
+  echo "Arena created in: $arena_docroot$1"
+  echo
+  if [ -z "$(git config --get user.name)" ]; then
+    echo 'btw odporucam: git config --global user.name "User name"'
+  fi
+  if [ -z "$(git config --get user.email)" ]; then
+    echo 'btw odporucam: git config --global user.email user@example.com'
+  fi
+}
+
+
+drop () {
+  if [[ "$1" == *[^A-Za-z]* ]]; then
+    echo >&2 "error: invalid character in arena name"
+    exit 1
+  fi
+  if ! [ "$1" ]; then
+    echo >&2 "error: no arena name specified"
+    exit 1
+  fi
+
+  default db_name aa_$1
+
+  echo "To permanently delete this arena, execute the following commands:"
+  echo ""
+  [ -e "$arena_docroot$1" ] && echo "sudo rm -rf $arena_docroot$1"
+  [ -z "$db_rootpw" ] && show_pw='' || show_pw='"$db_rootpw"'
+  echo "mysql -u root -p$show_pw mysql <<<'DROP DATABASE IF EXISTS $db_name; DELETE FROM db WHERE db.Db = \"$db_name\"; FLUSH PRIVILEGES;'"
+  echo ""
+}
+
+
+
+if [ "$1" == "create" ]; then
+  create "$2"
+elif [ "$1" == "drop" ] && [ "$2" == "--dry-run" ]; then
+  drop "$3"
+else
+  echo "usage:"
+  echo "  $0 create <name>"
+  echo "  $0 drop --dry-run <name>"
+  exit 1
+fi
+
