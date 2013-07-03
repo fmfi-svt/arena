@@ -8,7 +8,7 @@ default () { [ "${!1}" == "" ] && export "$1=$2"; true; }
 default clone_url "https://code.google.com/p/fmfi-anketa/"
 default www_user "www-data"
 default db_user "anketaarena"
-default sql_file "anketa.fmph.uniba.sk:/home/majak/backup.latest.sql.gz"
+default sql_file "/var/local/arena/anketa-template.sql.gz"
 default arena_docroot "/var/www/anketaarena/"
 
 
@@ -63,9 +63,6 @@ create () {
   user_email=$(git config --get user.email; true)
   [ -z "$user_email" ] && read -rp "Your e-mail: " user_email
 
-  # download db dump first (so that the rest does not require interaction)
-  scp "$sql_file" "$dir"
-
   # 1. clone
   git clone "$clone_url" "$1"
   cd "$1"
@@ -91,10 +88,9 @@ create () {
 
   # 4. make db
   sql_basename=${sql_file##*/}
-  gunzip "$dir/$sql_basename"
   mysql -u "$db_user" -p"$db_password" <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
   echo "importing $sql_basename..."
-  trypv "$dir/${sql_basename%.gz}" | mysql -u "$db_user" -p"$db_password" "$db_name"
+  trypv "$sql_file" | zcat | mysql -u "$db_user" -p"$db_password" "$db_name"
 
   # 5. install
   cd "$dir"
