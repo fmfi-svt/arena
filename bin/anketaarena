@@ -31,11 +31,8 @@ trypv () {
   fi
 }
 
-
-create () {
-  # TODO checkni ci je mysql odsprostene
-
-  if [[ "$1" == *[^A-Za-z]* ]]; then
+check_arena_name () {
+  if [[ "$1" == *[^A-Za-z0-9]* ]]; then
     echo >&2 "error: invalid character in arena name"
     exit 1
   fi
@@ -43,6 +40,12 @@ create () {
     echo >&2 "error: no arena name specified"
     exit 1
   fi
+}
+
+create () {
+  # TODO checkni ci je mysql odsprostene
+
+  check_arena_name "$1"
   if [ -e "$arena_docroot/$1" ]; then
     echo >&2 "error: arena already exists"
     exit 1
@@ -110,15 +113,7 @@ create () {
 
 
 drop () {
-  if [[ "$1" == *[^A-Za-z]* ]]; then
-    echo >&2 "error: invalid character in arena name"
-    exit 1
-  fi
-  if ! [ "$1" ]; then
-    echo >&2 "error: no arena name specified"
-    exit 1
-  fi
-
+  check_arena_name "$1"
   default db_name aa_$1
 
   echo "To permanently delete this arena, execute the following commands:"
