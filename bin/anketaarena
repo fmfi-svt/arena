@@ -66,6 +66,9 @@ create () {
   user_email=$(git config --get user.email; true)
   [ -z "$user_email" ] && read -rp "Your e-mail: " user_email
 
+  # download db dump first (so that the rest does not require interaction)
+  scp "$sql_file" "$dir"
+
   # 1. clone
   git clone "$clone_url" "$1"
   cd "$1"
@@ -91,9 +94,10 @@ create () {
 
   # 4. make db
   sql_basename=${sql_file##*/}
+  gunzip "$dir/$sql_basename"
   arenamysql <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
   echo "importing $sql_basename..."
-  trypv "$sql_file" | zcat | arenamysql "$db_name"
+  trypv "$dir/${sql_basename%.gz}" | arenamysql "$db_name"
 
   # 5. install
   cd "$dir"

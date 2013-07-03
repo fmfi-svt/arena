@@ -13,4 +13,5 @@ Instalacia
 10. Restartni apache2
 11. Nakopiruj bin/anketaarena do /usr/local/bin
 12. Nakopiruj etc/anketaarena.cfg.dist do /etc/anketaarena.cfg a vhodne uprav
-13. Vytvor /var/local/arena/anketa-template.sql.gz a/alebo nastav nech sa to tam automaticky kopiruje
+13. Bud v configu povedz z akeho serveru sa ma stahovat sql dump, alebo zariad aby sa
+    automaticky kopiroval na arena stroj, a do configu daj len lokalnu cestu
