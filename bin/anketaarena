@@ -57,7 +57,6 @@ create () {
   # 0. get passwords
 
   [ -z "$db_password" ] && { read -rsp "MySQL password for $db_user: " db_password; echo; }
-  [ -z "$db_rootpw" ] && { read -rsp "MySQL password for root: " db_rootpw; echo; }
   [ -z "$email_password" ] && { read -rsp "Swiftmailer password: [default=~] " email_password; echo; }
   [ "$email_password" == "" ] && email_password="~"
 
@@ -96,7 +95,7 @@ create () {
   # 4. make db
   sql_basename=${sql_file##*/}
   gunzip "$dir/$sql_basename"
-  mysql -u root -p"$db_rootpw" <<<"CREATE DATABASE IF NOT EXISTS $db_name; GRANT ALL ON $db_name.* TO $db_user;"
+  mysql -u "$db_user" -p"$db_password" <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
   echo "importing $sql_basename..."
   trypv "$dir/${sql_basename%.gz}" | mysql -u "$db_user" -p"$db_password" "$db_name"
 
@@ -132,8 +131,7 @@ drop () {
   echo "To permanently delete this arena, execute the following commands:"
   echo ""
   [ -e "$arena_docroot$1" ] && echo "sudo rm -rf $arena_docroot$1"
-  [ -z "$db_rootpw" ] && show_pw='' || show_pw='"$db_rootpw"'
-  echo "mysql -u root -p$show_pw mysql <<<'DROP DATABASE IF EXISTS $db_name; DELETE FROM db WHERE db.Db = \"$db_name\"; FLUSH PRIVILEGES;'"
+  echo "mysql -u root -pPASSWORD mysql <<<'DROP DATABASE IF EXISTS $db_name; DELETE FROM db WHERE db.Db = \"$db_name\"; FLUSH PRIVILEGES;'"
   echo ""
 }
 
