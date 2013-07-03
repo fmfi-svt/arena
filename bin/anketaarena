@@ -66,9 +66,6 @@ create () {
   # download db dump first (so that the rest does not require interaction)
   scp "$sql_file" "$dir"
 
-  # check sudo first (hopefully it will remain cached until it's needed)
-  sudo true
-
   # 1. clone
   git clone "$clone_url" "$1"
   cd "$1"
@@ -101,7 +98,7 @@ create () {
 
   # 5. install
   cd "$dir"
-  sudo mv "$1" "$arena_docroot"
+  mv "$1" "$arena_docroot"
 
   # 6. done
   echo
@@ -130,7 +127,7 @@ drop () {
 
   echo "To permanently delete this arena, execute the following commands:"
   echo ""
-  [ -e "$arena_docroot$1" ] && echo "sudo rm -rf $arena_docroot$1"
+  [ -e "$arena_docroot$1" ] && echo "rm -rf $arena_docroot$1"
   echo "mysql -u root -pPASSWORD mysql <<<'DROP DATABASE IF EXISTS $db_name; DELETE FROM db WHERE db.Db = \"$db_name\"; FLUSH PRIVILEGES;'"
   echo ""
 }

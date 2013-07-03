@@ -8,6 +8,8 @@ Instalacia
 5. cp apache2/anketaarena /etc/apache2/sites-available
 6. Includni tento config vo vhoste
 7. Vytvor docroot a nakopiruj veci z web
-8. Restartni apache2
-9. Nakopiruj bin/anketaarena do /usr/local/bin
+8. Vytvor skupinu `arena` a pridaj do nej ludi, co maju mat pristup
+9. `sudo chown root:arena /var/www/anketaarena && sudo chmod g+w /var/www/anketaarena`
+10. Restartni apache2
+11. Nakopiruj bin/anketaarena do /usr/local/bin
 
