@@ -5,11 +5,16 @@ installdir="$(dirname "$(readlink -f "$0")")"
 
 default () { [ "${!1}" == "" ] && export "$1=$2"; true; }
 
-default clone_url "https://code.google.com/p/fmfi-anketa/"
-default www_user "www-data"
-default db_user "anketaarena"
-default sql_file "/var/local/arena/anketa-template.sql.gz"
-default arena_docroot "/var/www/anketaarena/"
+if [ "$aa_config" ]; then
+  source "$aa_config"
+elif [ -f "$installdir/../etc/anketaarena.cfg" ]; then
+  source "$installdir/../etc/anketaarena.cfg"
+elif [ -f /etc/anketaarena.cfg ]; then
+  source /etc/anketaarena.cfg
+else
+  echo "cannot find anketaarena config file"
+  exit 1
+fi
 
 
 hrule () {

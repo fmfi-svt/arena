@@ -12,4 +12,5 @@ Instalacia
 9. `sudo chown root:arena /var/www/anketaarena && sudo chmod g+w /var/www/anketaarena`
 10. Restartni apache2
 11. Nakopiruj bin/anketaarena do /usr/local/bin
-12. Vytvor /var/local/arena/anketa-template.sql.gz a/alebo nastav nech sa to tam automaticky kopiruje
+12. Nakopiruj etc/anketaarena.cfg.dist do /etc/anketaarena.cfg a vhodne uprav
+13. Vytvor /var/local/arena/anketa-template.sql.gz a/alebo nastav nech sa to tam automaticky kopiruje

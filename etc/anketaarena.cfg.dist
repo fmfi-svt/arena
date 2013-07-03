@@ -1,0 +1,5 @@
+default clone_url "https://code.google.com/p/fmfi-anketa/"
+default www_user "www-data"
+default db_user "anketaarena"
+default sql_file "/path/to/anketa-template.sql.gz"
+default arena_docroot "/var/www/anketaarena/"
