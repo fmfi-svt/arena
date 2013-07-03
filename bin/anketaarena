@@ -91,9 +91,9 @@ create () {
 
   # 4. make db
   sql_basename=${sql_file##*/}
-  mysql -u "$db_user" -p"$db_password" <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
+  arenamysql <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
   echo "importing $sql_basename..."
-  trypv "$sql_file" | zcat | mysql -u "$db_user" -p"$db_password" "$db_name"
+  trypv "$sql_file" | zcat | arenamysql "$db_name"
 
   # 5. install
   cd "$dir"
@@ -119,9 +119,12 @@ drop () {
   echo "To permanently delete this arena, execute the following commands:"
   echo ""
   [ -e "$arena_docroot$1" ] && echo "rm -rf $arena_docroot$1"
-  show_pv=''   # TODO anketaarena mysql
-  echo "mysql -u $db_user -p$show_pw <<<'DROP DATABASE IF EXISTS $db_name;'"
+  echo "$0 mysql <<<'DROP DATABASE IF EXISTS $db_name;'"
   echo ""
+}
+
+arenamysql () {
+  mysql -u "$db_user" -p"$db_password" "$@"
 }
 
 
@@ -130,10 +133,14 @@ if [ "$1" == "create" ]; then
   create "$2"
 elif [ "$1" == "drop" ] && [ "$2" == "--dry-run" ]; then
   drop "$3"
+elif [ "$1" == "mysql" ]; then
+  shift
+  arenamysql "$@"
 else
   echo "usage:"
   echo "  $0 create <name>"
   echo "  $0 drop --dry-run <name>"
+  echo "  $0 mysql [<dbname>] [<other-mysql-options>]"
   exit 1
 fi
 
