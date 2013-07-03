@@ -63,11 +63,6 @@ create () {
   echo "$dir"
 
   # 0. get passwords
-
-  [ -z "$db_password" ] && { read -rsp "MySQL password for $db_user: " db_password; echo; }
-  [ -z "$email_password" ] && { read -rsp "Swiftmailer password: [default=~] " email_password; echo; }
-  [ "$email_password" == "" ] && email_password="~"
-
   user_email=$(git config --get user.email; true)
   [ -z "$user_email" ] && read -rp "Your e-mail: " user_email
 
@@ -124,7 +119,7 @@ drop () {
   echo "To permanently delete this arena, execute the following commands:"
   echo ""
   [ -e "$arena_docroot$1" ] && echo "rm -rf $arena_docroot$1"
-  [ -z "$db_password" ] && show_pw='' || show_pw='"$db_password"'
+  show_pv=''   # TODO anketaarena mysql
   echo "mysql -u $db_user -p$show_pw <<<'DROP DATABASE IF EXISTS $db_name;'"
   echo ""
 }
