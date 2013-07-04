@@ -18,7 +18,12 @@ fi
 
 
 hrule () {
-  yes = | tr -dc = | head -c${COLUMNS:-80}
+  echo $'\e[1m'
+  cols=$(tput cols)
+  yes = | tr -dc = | head -c${cols:-80}
+  echo
+  echo "$*"
+  echo $'\e[0m'
 }
 
 confset () {
@@ -61,7 +66,7 @@ create () {
 
   dir=`mktemp -d`
   cd "$dir"
-  echo "$dir"
+  echo "using temporary directory: $dir"
 
   # 0. get passwords
   user_email=$(git config --get user.email; true)
@@ -71,13 +76,16 @@ create () {
   scp "$sql_file" "$dir"
 
   # 1. clone
+  hrule "(1/5) git clone"
   clone_opts=()
   [ -n "$branch_name" ] && clone_opts=(-b "$branch_name")
   git clone "${clone_opts[@]}" "$clone_url" "$1"
   cd "$1"
 
   # 2. initialize
+  hrule "(2/5) init_all"
   ./scripts/init_all.sh "$www_user"
+  hrule "(3/5) composer"
   curl -s https://getcomposer.org/installer | php
   ./composer.phar install
 
@@ -96,6 +104,7 @@ create () {
     cat > app/config/config_local.yml
 
   # 4. make db
+  hrule "(4/5) create database $db_name"
   sql_basename=${sql_file##*/}
   gunzip "$dir/$sql_basename"
   arenamysql <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
@@ -103,12 +112,12 @@ create () {
   trypv "$dir/${sql_basename%.gz}" | arenamysql "$db_name"
 
   # 5. install
+  hrule "(5/5) move arena directory"
   cd "$dir"
   mv "$1" "$arena_docroot"
 
   # 6. done
-  echo
-  echo "Arena created in: $arena_docroot$1"
+  echo "arena successfully created in: $arena_docroot$1"
   echo
   if [ -z "$(git config --get user.name)" ]; then
     echo 'btw odporucam: git config --global user.name "User name"'
