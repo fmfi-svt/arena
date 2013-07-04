@@ -106,10 +106,10 @@ create () {
   # 4. make db
   hrule "(4/5) create database $db_name"
   sql_basename=${sql_file##*/}
-  gunzip "$dir/$sql_basename"
+  unxz "$dir/$sql_basename"
   arenamysql <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
   echo "importing $sql_basename..."
-  trypv "$dir/${sql_basename%.gz}" | arenamysql "$db_name"
+  trypv "$dir/${sql_basename%.xz}" | arenamysql "$db_name"
 
   # 5. install
   hrule "(5/5) move arena directory"
