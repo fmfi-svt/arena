@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# check if the user is in the right group
+groups | grep -q "arena"
+if [ $? -eq 1 ]; then
+  echo "Error: You are not in the 'arena' group."
+  exit 1
+fi
+
 set -e
 installdir="$(dirname "$(readlink -f "$0")")"
 
