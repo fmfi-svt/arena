@@ -53,6 +53,11 @@ check_arena_name () {
 }
 
 create () {
+  if ! [ -w "$arena_docroot" ]; then
+      echo >&2 "Error: You don't have permission to write to '$arena_docroot'."
+      exit 1
+  fi
+  
   # TODO checkni ci je mysql odsprostene
 
   check_arena_name "$1"
