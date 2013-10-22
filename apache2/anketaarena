@@ -15,9 +15,9 @@ RewriteEngine On
 RewriteRule ^/anketaarena$ /anketaarena/ [L,R=301]
 
 RewriteCond %{HTTP_COOKIE} !(^|;\ *)anketaarenaheslo=THESECRET($|[;\ ])
-RewriteRule ^/anketaarena/.* /var/www/anketaarena/index.php [E=BADCOOKIE:1]
+RewriteRule ^/anketaarena/.* /var/www/anketaarena/anketaarena.php [E=BADCOOKIE:1]
 
-RewriteRule ^/anketaarena/$ /var/www/anketaarena/index.php
+RewriteRule ^/anketaarena/$ /var/www/anketaarena/anketaarena.php
 
 SetEnv ALLOW_APP_LOGINDEV 1
 

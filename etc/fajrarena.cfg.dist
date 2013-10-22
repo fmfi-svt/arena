@@ -1,0 +1,3 @@
+default clone_url "https://code.google.com/p/fajr/"
+default www_user "www-data"
+default arena_docroot "/var/www/fajrarena/"

@@ -1,0 +1,27 @@
+# tento subor sa includuje z default-ssl
+
+# Kam zapisovat debugovacie hlasky k rewritom
+# vacsinu casu to chceme mat vypnute, nech to nespomaluje server
+#RewriteLog /var/log/apache2/rewrite.log
+#RewriteLogLevel 3
+
+RewriteEngine On
+
+<DirectoryMatch "^/var/www/fajrarena/\w+/web">
+	Order allow,deny
+	Allow from all
+</DirectoryMatch>
+
+RewriteRule ^/fajrarena$ /fajrarena/ [L,R=301]
+
+RewriteCond %{HTTP_COOKIE} !(^|;\ *)fajrarenaheslo=THESECRET($|[;\ ])
+RewriteRule ^/fajrarena/.* /var/www/fajrarena/fajrarena.php [E=BADCOOKIE:1]
+
+RewriteRule ^/fajrarena/$ /var/www/fajrarena/fajrarena.php
+
+RewriteCond /var/www/fajrarena/$1/web/$2 !-f
+RewriteCond $2 !^index\.php
+RewriteRule ^/fajrarena/(\w+)/(.*) /fajrarena/$1/index.php [QSA,PT]
+
+AliasMatch ^/fajrarena/(\w+)(.*) /var/www/fajrarena/$1/web$2
+
