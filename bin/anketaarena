@@ -172,7 +172,7 @@ elif [ "$1" == "list" ]; then
   list "$2"
 else
   echo "usage:"
-  echo "  $0 create <name>"
+  echo "  $0 create <name> [<branch>]"
   echo "  $0 list [user]"
   echo "  $0 list --all"
   echo "  $0 drop --dry-run <name>"
