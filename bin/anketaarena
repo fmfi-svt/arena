@@ -149,16 +149,16 @@ arenamysql () {
 }
 
 list () {
-  user="$1"
-  [ -z "$user" ] && user="$(whoami)"
   if [ "$1" == "--all" ]; then
-    find_opts=()
+    user=""
+  elif [ "$1" ]; then
+    user="($1)"
   else
-    find_opts=(-user "$user")
+    user="($(whoami))"
   fi
-  while IFS= read -r -u3 -d '' arena; do
-    echo $(basename "$arena") $(stat --printf="(%U)" "$arena")
-  done 3< <(find "$arena_docroot"/* -maxdepth 0 -type d ${find_opts[@]} -print0)
+  cd "$arena_docroot"
+  GLOBIGNORE=*.php
+  stat -c '%n (%U)' * | grep -F "$user"
 }
 
 if [ "$1" == "create" ]; then
