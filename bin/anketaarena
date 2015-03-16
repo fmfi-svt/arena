@@ -61,7 +61,8 @@ create () {
   # TODO checkni ci je mysql odsprostene
 
   check_arena_name "$1"
-  if [ -e "$arena_docroot/$1" ]; then
+  destdir=${arena_docroot%/}/$1
+  if [ -e "$destdir" ]; then
     echo >&2 "error: arena already exists"
     exit 1
   fi
@@ -69,23 +70,26 @@ create () {
   default db_name aa_$1
   default branch_name "$2"
 
-  dir=`mktemp -d`
-  cd "$dir"
-  echo "using temporary directory: $dir"
+  tmpdir=`mktemp -d`
+  echo "using temporary directory: $tmpdir"
 
   # 0. get passwords
   user_email=$(git config --get user.email; true)
   [ -z "$user_email" ] && read -rp "Your e-mail: " user_email
 
   # download db dump first (so that the rest does not require interaction)
-  scp "$sql_file" "$dir"
+  scp "$sql_file" "$tmpdir/dump.sql.xz"
 
   # 1. clone
   hrule "(1/5) git clone"
   clone_opts=()
   [ -n "$branch_name" ] && clone_opts=(-b "$branch_name")
-  git clone "${clone_opts[@]}" "$clone_url" "$1"
-  cd "$1"
+  trap '
+    echo; echo; echo "FAILED - moving $destdir to $tmpdir"
+    mv "$destdir" "$tmpdir"' EXIT
+  mkdir -m 700 "$destdir"
+  git clone "${clone_opts[@]}" "$clone_url" "$destdir"
+  cd "$destdir"
 
   # 2. initialize
   hrule "(2/5) init_all"
@@ -95,8 +99,8 @@ create () {
   ./composer.phar install
 
   # 3. configure
-  cp app/config/config_local.yml $dir/
-  cat $dir/config_local.yml |
+  cp app/config/config_local.yml $tmpdir/
+  cat $tmpdir/config_local.yml |
     sed -r '/^\s*database:/,/^\s*$/ d' |         # remove the first database:
     sed -r '/^#\s*database:/,/^\s*$/ s/^#//' |   # uncomment the second database:
     confset dbname $db_name |
@@ -110,19 +114,18 @@ create () {
 
   # 4. make db
   hrule "(4/5) create database $db_name"
-  sql_basename=${sql_file##*/}
-  unxz "$dir/$sql_basename"
+  unxz "$tmpdir/dump.sql.xz"
   arenamysql <<<"CREATE DATABASE IF NOT EXISTS $db_name;"
-  echo "importing $sql_basename..."
-  trypv "$dir/${sql_basename%.xz}" | arenamysql "$db_name"
+  echo "importing dump.sql..."
+  trypv "$tmpdir/dump.sql" | arenamysql "$db_name"
 
   # 5. install
-  hrule "(5/5) move arena directory"
-  cd "$dir"
-  mv "$1" "$arena_docroot"
+  hrule "(5/5) clean up"
+  chmod 755 "$destdir"
+  trap "" EXIT
 
   # 6. done
-  echo "arena successfully created in: $arena_docroot$1"
+  echo "arena successfully created in: $destdir"
   echo
   if [ -z "$(git config --get user.name)" ]; then
     echo 'btw odporucam: git config --global user.name "User name"'
@@ -139,7 +142,7 @@ drop () {
 
   echo "To permanently delete this arena, execute the following commands:"
   echo ""
-  [ -e "$arena_docroot$1" ] && echo "rm -rf $arena_docroot$1"
+  [ -e "${arena_docroot%/}/$1" ] && echo "rm -rf ${arena_docroot%/}/$1"
   echo "$0 mysql <<<'DROP DATABASE IF EXISTS $db_name;'"
   echo ""
 }
