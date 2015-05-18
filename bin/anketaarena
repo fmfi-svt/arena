@@ -177,6 +177,10 @@ import () {
   echo "importing dump.sql..."
   trypv dump.sql | ignore_view_definer | arenamysql "$2"
 
+  # pseudo anonymizacia - mozu sa importovat aj data uprostred hlasovania, ale aspon vymazeme author_id
+  # ludia mozu dalej hlasovat, takze ked sa niekto prihlasi v arene, ma akoby "dva hlasy"
+  arenamysql "$2" <<<'UPDATE Answer SET author_id = NULL;'
+
   rm dump.sql
 }
 
