@@ -151,6 +151,39 @@ arenamysql () {
   mysql -u "$db_user" -p"$db_password" "$@"
 }
 
+import () {
+  if [ "$1" == "" ] || [[ "$1" == *[^a-z]* ]]; then
+    echo >&2 "error: invalid instance name"
+    exit 1
+  fi
+  if ! [[ "$2" == aa_* ]]; then
+    echo >&2 "error: invalid arena database name"
+    exit 1
+  fi
+
+  tmpdir=`mktemp -d`
+  echo "using temporary directory: $tmpdir"
+  cd "$tmpdir"
+
+  stty -echo
+  trap 'stty echo' EXIT
+  ssh -C svt4.fmph.uniba.sk "sudo -S -u anketa echo $'\ndumping database...' >&2; sudo -S -u anketa anketa-mysql --bin mysqldump $1" > dump.sql
+
+  if ! tail dump.sql | grep 'Dump completed'; then
+    echo <&2 "error: sql dump is incomplete!"
+    exit 1
+  fi
+
+  echo "importing dump.sql..."
+  trypv dump.sql | ignore_view_definer | arenamysql "$2"
+
+  rm dump.sql
+}
+
+ignore_view_definer () {
+  sed '/^...50013 DEFINER=/d'
+}
+
 list () {
   if [ "$1" == "--all" ]; then
     user=""
@@ -171,6 +204,8 @@ elif [ "$1" == "drop" ] && [ "$2" == "--dry-run" ]; then
 elif [ "$1" == "mysql" ]; then
   shift
   arenamysql "$@"
+elif [ "$1" == "import" ]; then
+  import "$2" "$3"
 elif [ "$1" == "list" ]; then
   list "$2"
 else
@@ -180,6 +215,7 @@ else
   echo "  $0 list --all"
   echo "  $0 drop --dry-run <name>"
   echo "  $0 mysql [<dbname>] [<other-mysql-options>]"
+  echo "  $0 import <prod-instance-name> <arena-dbname>"
   exit 1
 fi
 
