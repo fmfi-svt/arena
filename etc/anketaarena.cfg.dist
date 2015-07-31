@@ -1,4 +1,4 @@
-default clone_url "https://code.google.com/p/fmfi-anketa/"
+default clone_url "https://github.com/fmfi-svt/anketa.git"
 default www_user "www-data"
 default db_user "anketaarena"
 default db_password "password"
